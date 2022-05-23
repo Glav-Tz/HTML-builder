@@ -2,78 +2,72 @@ const fs = require ('fs');
 const path = require('path');
 
 const pathFolder = path.join(__dirname, 'secret-folder');
-// const infoFile = {
-//   nameFile: 'none',
-//   extFile:  '.none',
-//   sizeFile: '0',
-// };
-let arrInfoFile = [];
 
-const getInfFile = async (pathFolder) => {
-  return new Promise((resolve, rejects) => {    
+let tempArr = [];
+async function fileSize(element) {
+  const promiseFileSize = new Promise((resolve, reject) => {
+    let currentFile = path.join(pathFolder, element.name);
+    fs.stat(currentFile, (err, stats) => {
+      if (err) {
+        return reject('Упс!_fileSize');
+      }else {        
+        return resolve(stats.size);
+      }                  
+    });        
+  });
+  return promiseFileSize;
+}
+
+
+async function arrInfoFile (fileSize, file) {
+  const promiseInfo = new Promise((resolve) => {
+    let arrInfoOneFile = [];  
+    let extEnd = (file.split('.')).pop();
+    let extFirst = (file.split('.')).shift();
+    arrInfoOneFile.push(extFirst, extEnd, fileSize);
+    return resolve(arrInfoOneFile.join('-'));  
+  });
+  return promiseInfo;
+}
+
+async function listFiles(pathFolder) {
+  const promiseReaddir = new Promise((resolve, reject) => {
     fs.readdir(pathFolder, { withFileTypes: true }, (err, files) => {
       if (err) {
-        return rejects (err.message);
-      } else {
-        files.map((element) => {
-          if (element.isDirectory()) {
-            getInfFile(path.join(pathFolder, element.name));
-            console.log(1);
-          } else {
-            let currentFile = path.join(pathFolder, element.name);      
-            fs.stat(currentFile, (err, stats) => {
-              ext(element.name, stats.size);      
-            });      
-          }
-        });
-        console.log(arrInfoFile);
-        resolve();
-      }        
+        return reject('Упс!_listFiles');
+      } else {       
+        return resolve(files);
+      }    
     });
   });
-};
-
-
-
-// const getInfFile = async (pathFolder) => {
-//   fs.readdir(pathFolder, { withFileTypes: true }, (err, files) => {  
-//     files.map((element) => {
-//       if (element.isDirectory()) {
-//         getInfFile(path.join(pathFolder, element.name));
-//       } else {
-//         let currentFile = path.join(pathFolder, element.name);      
-//         fs.stat(currentFile, (err, stats) => {
-//           console.log(1);
-//           console.log(arrInfoFile);
-//           return arrInfoFile.push((ext(element.name, stats.size)));          
-//         });        
-//       }
-//     });    
-//   });   
-// };
-
-function ext(file, fileSize) {
-  let arrInfoOneFile = [];  
-  let extEnd = (file.split('.')).pop();
-  let extFirst = (file.split('.')).shift();
-  arrInfoOneFile.push(extFirst, extEnd, fileSize);
-  arrInfoFile.push(arrInfoOneFile.join('-'));
-  
-}
-function temp2() {
-  return console.log(arrInfoFile);
+  return promiseReaddir;
 }
 
-getInfFile(pathFolder)
-  .then(() => temp2());
+async function infoFiles(arrData) {
+  const promiseInfoFile = new Promise((resolve) => {
+    arrData.forEach((element) => {
+      if (element.isDirectory()) {
+        console.log(1);        
+      }else {
+        fileSize(element)
+          .then(size => arrInfoFile(size, element.name))
+          .then(stringInfo => {
+            console.log(stringInfo);
+            return tempArr.push(stringInfo);
+          });        
+      }
+    });    
+    resolve(tempArr);
+  });
+  return promiseInfoFile;
+}
 
+async function asyncStart() {
+  let step1 = await listFiles(pathFolder);
+  let step2 = await infoFiles(step1);
+  console.log('step2');
+  console.log(step2);  
+}
 
-  
+asyncStart();
 
-// fs.stat(pathFolder, (err, stats) => {
-//   console.log(stats.isFile());
-//   console.log(stats);
-
-// });
-
-//<имя файла>-<расширение файла>-<вес файла></вес>
